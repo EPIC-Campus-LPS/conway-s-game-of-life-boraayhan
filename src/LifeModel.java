@@ -1,4 +1,4 @@
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
@@ -18,8 +18,7 @@ import java.util.Scanner;
  * step will generate only the next generation of cells
  * resume starts the simulation running again after pause
  */
-public class LifeModel implements ActionListener
-{
+public class LifeModel implements ActionListener {
 
     /*
      *  This is the Model component.
@@ -31,38 +30,33 @@ public class LifeModel implements ActionListener
     private Timer timer; //makes the animation possible
 
     // initial population from file or random if no file available
-    public LifeModel(LifeView view)
-    {
-    	
-    	// initialize 
+    public LifeModel(LifeView view) {
+
+        // initialize
         myGrid = new LifeCell[SIZE][SIZE];
-        for (int r = 0; r < SIZE; r++ )
-            for (int c = 0; c < SIZE; c++ )
+        for (int r = 0; r < SIZE; r++)
+            for (int c = 0; c < SIZE; c++)
                 myGrid[r][c] = new LifeCell();
 
-      
-        try
-        {
-        	File reader = new File("life100.txt");
-        	Scanner infile = new Scanner(reader);
-        	int numInitialCells = infile.nextInt();
-            for (int count=0; count<numInitialCells; count++)
-            {
+
+        try {
+            File reader = new File("life100.txt");
+            Scanner infile = new Scanner(reader);
+            int numInitialCells = infile.nextInt();
+            for (int count = 0; count < numInitialCells; count++) {
                 int r = infile.nextInt();
                 int c = infile.nextInt();
                 myGrid[r][c].setAliveNow(true);
             }
             infile.close();
-        }
-        catch (IOException e)
-        {
-        	// use random population
-        	System.out.println("using a random setup");
-                                                       
-                for (LifeCell[] row: myGrid)
-                    for ( LifeCell cell: row)
-                        if ( Math.random() > 0.85)
-                            cell.setAliveNow(true);
+        } catch (IOException e) {
+            // use random population
+            System.out.println("using a random setup");
+
+            for (LifeCell[] row : myGrid)
+                for (LifeCell cell : row)
+                    if (Math.random() > 0.85)
+                        cell.setAliveNow(true);
         }
         myView = view; //set the view
         myView.updateView(myGrid); //draw the grid
@@ -71,45 +65,40 @@ public class LifeModel implements ActionListener
     /**
      * This method stop the timer and animation
      */
-    public void pause()
-    {
+    public void pause() {
         timer.stop();
     }
-    
+
     /**
      * This method restarts the timer and animation
      */
-    public void resume()
-    {
+    public void resume() {
         timer.restart();
     }
-    
+
     /**
      * This does one generation of Life and stops
      */
-    public void step()
-    {
+    public void step() {
         oneGeneration();
         myView.updateView(myGrid);
     }
-    
+
     /**
      * This starts the timer and sets speed
      */
-    public void run()
-    {
+    public void run() {
         timer = new Timer(50, this); //create timer and set delay
         timer.setCoalesce(true); //keep timer events even
         timer.start(); //start the timer
     }
 
-   
+
     /**
      * This makes the animation.  Every time the timer fires
      * a new generation of life is created and drawn on the screen
      */
-    public void actionPerformed(ActionEvent e)
-    {
+    public void actionPerformed(ActionEvent e) {
         oneGeneration();
         myView.updateView(myGrid);
     }
@@ -124,14 +113,36 @@ public class LifeModel implements ActionListener
      * 3. A cell with 4 or more neighbors will die from overcrowding.
      * 4. A cell with 2 or 3 neighbors will live into the next generation.
      * 5. All births and deaths occur simultaneously!
-     * 
+     * <p>
      * This method calls NumLiveNeighbors(), updateNextGen()
      */
-    public void oneGeneration()
-    {
-    	
-    } 
-    
+    public void oneGeneration() {
+        for (int r = 0; r < SIZE; r++) { // Iterate through each cell on grid
+            for (int c = 0; c < SIZE; c++) {
+                int neighbors = numLiveNeighbors(r, c); // Get live neighbor count
+                if(myGrid[r][c].isAliveNow())
+                { // This section just implements the rules stated above
+                    if(neighbors == 2 || neighbors == 3)
+                    {
+                        myGrid[r][c].setAliveNext(true);
+                    }
+                    if(neighbors > 3 || neighbors<2)
+                    {
+                        myGrid[r][c].setAliveNext(false);
+                    }
+                }
+                if(!myGrid[r][c].isAliveNow())
+                {
+                    if(neighbors == 3)
+                    {
+                        myGrid[r][c].setAliveNext(true);
+                    }
+                }
+            }
+        }
+        updateNextGen(); // Gotta update!
+    }
+
     /**
      * Helper method for oneGeneration()
      * Update all cells in the grid
@@ -139,35 +150,50 @@ public class LifeModel implements ActionListener
      * use for each loops
      */
     private void updateNextGen() {
-
+        for (LifeCell[] cellRow : myGrid) {
+            for (LifeCell cell : cellRow) {
+                cell.setAliveNow(cell.isAliveNext());
+            }
+        }
     }
-     
+
     /**
      * Helper method for oneGeneration
      * Given a cell in the grid, count its number
      * of live neighbors.  (Can you use nested loops??)
+     *
      * @param row - row of cell to find neighbors
      * @param col - column of cell to find neighbors
      * @return - number of live neighbors of the cell
-     * 
+     * <p>
      * This method calls inBounds()
      */
-    private int numLiveNeighbors (int row, int col)
-    {
-       return 0;
+
+    int numLiveNeighbors(int row, int col) {
+        int n = 0; // Represents a live count of live neighbors
+        for (int r = -1; r < 2; r++) {
+            for (int c = -1; c < 2; c++) {
+                if (inBounds(row + r, col + c)) { // To prevent OOB error
+                    if (myGrid[row + r][col + c].isAliveNow()) { // Check the 3x3 grid centered on the cell
+                        n++;
+                    }
+                }
+            }
+        }
+        if (myGrid[row][col].isAliveNow()) n--; // Account for the fact that we might have counted the current cell as a neighbor
+        return n;
     }
-    
+
     /**
      * Helper method for numLiveNeighbors
-     * Given a cell row and col checks to see if 
+     * Given a cell row and col checks to see if
      * the cell is in bounds.
+     *
      * @param row - row of cell
      * @param col - column of cell
      * @return - true if this cell is in bounds
      */
-    private boolean inBounds(int row, int col)
-    {
-        return false;
+    private boolean inBounds(int row, int col) {  // Checks if the cell is within rows and cols 0 to 60
+        return ((row >= 0 && col >= 0) && (row <= SIZE - 1 && col <= SIZE - 1));
     }
 }
-
